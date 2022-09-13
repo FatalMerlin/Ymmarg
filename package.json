@@ -1,0 +1,12 @@
+{
+  "name": "ymmarg",
+  "version": "0.0.0",
+  "description": "Testing Framework for https://github.com/grammyjs/grammY",
+  "main": "index.js",
+  "repository": "https://github.com/FatalMerlin/Ymmarg.git",
+  "author": "FatalMerlin <merlin.brandes@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@tsconfig/node16": "^1.0.3"
+  }
+}
