@@ -65,8 +65,12 @@ class ChatWrapper<T extends Chat> {
   }
 }
 
-type MessageUpdate = Required<Pick<Update, "update_id" | "message">>;
-type ChatMemberUpdate = Required<Pick<Update, "update_id" | "chat_member">>;
+type UpdateType<T extends keyof Omit<Update, "update_id">> = Required<
+  Pick<Update, "update_id" | T>
+>;
+
+type MessageUpdate = UpdateType<"message">;
+type ChatMemberUpdate = UpdateType<"chat_member">;
 
 function createUser(): UserWrapper {
   const id = getId();
