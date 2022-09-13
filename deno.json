@@ -1,3 +1,10 @@
 {
-  "importMap": "./importmap.json"
+  "importMap": "./importmap.json",
+  "fmt": {
+    "options": {
+      "indentWidth": 2,
+      "singleQuote": true,
+      "lineWidth": 100
+    }
+  }
 }
