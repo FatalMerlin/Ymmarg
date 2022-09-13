@@ -36,6 +36,13 @@ Deno.test('ctx.chatMember', async () => {
   const apiEvents = await group1.addUser(user1);
 
   assertEquals(apiEvents.length, 1);
+
+  // Option A:
+  Ymmarg.expect(apiEvents[0])
+    .to.replyWith('I got a new chatmember!')
+    .inChat(group1);
+
+  // Option B:
   assertEquals(apiEvents[0].method, 'sendMessage');
   assertEquals(apiEvents[0].payload, {
     chat_id: group1.chat.id,

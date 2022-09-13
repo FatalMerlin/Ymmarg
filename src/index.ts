@@ -1,6 +1,10 @@
 import { ApiResponse, Chat, Update, User } from 'grammy/types.ts';
 import { Bot, RawApi } from 'grammy/mod.ts';
 import { Methods, Payload } from 'grammy/core/client.ts';
+import {
+  assertExists,
+  assertStrictEquals,
+} from 'https://deno.land/std@0.155.0/testing/asserts.ts';
 
 function getUnixTime() {
   return ~~(Date.now() / 1000);
@@ -33,12 +37,6 @@ type ApiCallResult<M extends Methods<R>, R extends RawApi> = R[M] extends (
 ) => unknown
   ? Awaited<ReturnType<R[M]>>
   : never;
-
-// declare type ApiCallResult<
-//     R extends RawApi,
-//     M extends Methods<R> = Methods<R>,
-//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-// > = R[M] extends (...args: any[]) => any ? Await<ReturnType<R[M]>> : never;
 
 class EnvironmentWrapper {
   private counter = 0;
@@ -191,4 +189,29 @@ type ChatMemberUpdate = UpdateType<'chat_member'>;
 export const Ymmarg = {
   createEnvironment,
   getId,
+  expect(event: ApiEvent) {
+    return {
+      to: {
+        replyWith(message: string) {
+          assertStrictEquals(event.method, 'sendMessage');
+          const payload = event.payload as Payload<'sendMessage', RawApi>;
+          assertExists(payload.text);
+
+          assertStrictEquals(payload.text, message);
+
+          return {
+            inChat(chat: number | Chat | ChatWrapper<Chat>) {
+              const chatId =
+                typeof chat === 'number'
+                  ? chat
+                  : chat instanceof ChatWrapper
+                  ? chat.chat.id
+                  : chat.id;
+              assertStrictEquals(payload.chat_id, chatId);
+            },
+          };
+        },
+      },
+    };
+  },
 };
