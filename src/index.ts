@@ -1,4 +1,5 @@
-import { Chat, Update, User } from "grammy/types.ts";
+import { Chat, Update, User } from 'grammy/types.ts';
+import { Bot } from 'grammy/mod.ts';
 
 function getUnixTime() {
   return ~~(Date.now() / 1000);
@@ -6,25 +7,80 @@ function getUnixTime() {
 
 let counter = 0;
 function getId() {
-  return counter++;
+  return ++counter;
 }
 
 const dummyUser: User = {
-  first_name: "Dummy",
+  first_name: 'Dummy',
   id: -1,
   is_bot: false,
 };
 
-function createGroup(): ChatWrapper<Chat.GroupChat> {
-  const id = getId();
+function createEnvironment(): EnvironmentWrapper {
+  return new EnvironmentWrapper();
+}
 
-  const wrapper = new ChatWrapper<Chat.GroupChat>({
-    id,
-    title: `Group ${id}`,
-    type: "group",
-  });
+class EnvironmentWrapper {
+  private counter = 0;
 
-  return wrapper;
+  private _chats: Map<number, ChatWrapper<Chat>> = new Map();
+  private _users: Map<number, UserWrapper> = new Map();
+  private _updates: Update[] = [];
+
+  public getChat(id: number): ChatWrapper<Chat> | undefined {
+    return this._chats.get(id);
+  }
+
+  public getUser(id: number): UserWrapper | undefined {
+    return this._users.get(id);
+  }
+
+  private getId() {
+    return ++counter;
+  }
+
+  public createGroup(): ChatWrapper<Chat.GroupChat> {
+    const id = this.getId();
+
+    const chatWrapper = new ChatWrapper<Chat.GroupChat>(this, {
+      id,
+      title: `Group ${id}`,
+      type: 'group',
+    });
+
+    this._chats.set(id, chatWrapper);
+    return chatWrapper;
+  }
+
+  public createUser(): UserWrapper {
+    const id = getId();
+
+    const userWrapper = new UserWrapper(this, {
+      id,
+      first_name: `User ${id}`,
+      is_bot: false,
+    });
+
+    this._users.set(id, userWrapper);
+    return userWrapper;
+  }
+
+  public setup(bot: Bot) {
+    bot.api.config.use(async (prev, method, payload, abort) => {
+      return undefined as any;
+    });
+  }
+}
+
+class UserWrapper {
+  private _user: User;
+  public get user(): User {
+    return this._user;
+  }
+
+  constructor(private _environment: EnvironmentWrapper, user: User) {
+    this._user = user;
+  }
 }
 
 class ChatWrapper<T extends Chat> {
@@ -37,14 +93,20 @@ class ChatWrapper<T extends Chat> {
     [id: number]: User;
   } = {};
 
-  constructor(chat: T) {
+  constructor(private _environment: EnvironmentWrapper, chat: T) {
     this._chat = chat;
   }
 
   public addUser(userWrapper: UserWrapper): ChatMemberUpdate {
     if (this._participants[userWrapper.user.id] !== undefined) {
-      throw new Error("User already added to chat");
+      throw new Error('User already added to chat');
     }
+    if (this._environment.getUser(userWrapper.user.id) !== userWrapper) {
+      throw new Error(
+        'User is not part of this environment. Did you use the wrong user?'
+      );
+    }
+
     this._participants[userWrapper.user.id] = userWrapper.user;
     return {
       update_id: getId(),
@@ -53,11 +115,11 @@ class ChatWrapper<T extends Chat> {
         date: getUnixTime(),
         from: dummyUser,
         new_chat_member: {
-          status: "member",
+          status: 'member',
           user: userWrapper.user,
         },
         old_chat_member: {
-          status: "left",
+          status: 'left',
           user: userWrapper.user,
         },
       },
@@ -65,36 +127,14 @@ class ChatWrapper<T extends Chat> {
   }
 }
 
-type UpdateType<T extends keyof Omit<Update, "update_id">> = Required<
-  Pick<Update, "update_id" | T>
+type UpdateType<T extends keyof Omit<Update, 'update_id'>> = Required<
+  Pick<Update, 'update_id' | T>
 >;
 
-type MessageUpdate = UpdateType<"message">;
-type ChatMemberUpdate = UpdateType<"chat_member">;
-
-function createUser(): UserWrapper {
-  const id = getId();
-
-  return new UserWrapper({
-    id,
-    first_name: `User ${id}`,
-    is_bot: false,
-  });
-}
-
-class UserWrapper {
-  private _user: User;
-  public get user(): User {
-    return this._user;
-  }
-
-  constructor(user: User) {
-    this._user = user;
-  }
-}
+type MessageUpdate = UpdateType<'message'>;
+type ChatMemberUpdate = UpdateType<'chat_member'>;
 
 export const Ymmarg = {
-  createGroup,
-  createUser,
+  createEnvironment,
   getId,
 };
