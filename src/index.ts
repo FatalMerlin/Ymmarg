@@ -1,5 +1,6 @@
-import { Chat, Update, User } from 'grammy/types.ts';
-import { Bot } from 'grammy/mod.ts';
+import { ApiResponse, Chat, Update, User } from 'grammy/types.ts';
+import { Bot, RawApi } from 'grammy/mod.ts';
+import { Methods, Payload } from 'grammy/core/client.ts';
 
 function getUnixTime() {
   return ~~(Date.now() / 1000);
@@ -16,16 +17,39 @@ const dummyUser: User = {
   is_bot: false,
 };
 
-function createEnvironment(): EnvironmentWrapper {
-  return new EnvironmentWrapper();
+function createEnvironment(bot: Bot): EnvironmentWrapper {
+  return new EnvironmentWrapper(bot);
 }
+
+type ApiEvent = {
+  method: Methods<RawApi>;
+  payload: Payload<Methods<RawApi>, RawApi>;
+};
+
+type Awaited<T> = T extends PromiseLike<infer V> ? V : T;
+
+type ApiCallResult<M extends Methods<R>, R extends RawApi> = R[M] extends (
+  ...args: unknown[]
+) => unknown
+  ? Awaited<ReturnType<R[M]>>
+  : never;
+
+// declare type ApiCallResult<
+//     R extends RawApi,
+//     M extends Methods<R> = Methods<R>,
+//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// > = R[M] extends (...args: any[]) => any ? Await<ReturnType<R[M]>> : never;
 
 class EnvironmentWrapper {
   private counter = 0;
 
   private _chats: Map<number, ChatWrapper<Chat>> = new Map();
   private _users: Map<number, UserWrapper> = new Map();
-  private _updates: Update[] = [];
+  private _events: ApiEvent[] = [];
+
+  constructor(private _bot: Bot) {
+    this.setup(_bot);
+  }
 
   public getChat(id: number): ChatWrapper<Chat> | undefined {
     return this._chats.get(id);
@@ -33,6 +57,16 @@ class EnvironmentWrapper {
 
   public getUser(id: number): UserWrapper | undefined {
     return this._users.get(id);
+  }
+
+  public getEvents() {
+    const events = this._events;
+    this._events = [];
+    return events;
+  }
+
+  public get bot() {
+    return this._bot;
   }
 
   private getId() {
@@ -65,10 +99,26 @@ class EnvironmentWrapper {
     return userWrapper;
   }
 
-  public setup(bot: Bot) {
-    bot.api.config.use(async (prev, method, payload, abort) => {
-      return undefined as any;
-    });
+  private setup(bot: Bot) {
+    bot.api.config.use(
+      // deno-lint-ignore require-await
+      async (
+        _prev,
+        method,
+        payload
+      ): Promise<ApiResponse<ApiCallResult<Methods<RawApi>, RawApi>>> => {
+        this._events.push({ method, payload });
+
+        switch (method) {
+          case 'sendMessage':
+            return {
+              ok: true,
+            } as ApiResponse<ApiCallResult<'sendMessage', RawApi>>;
+        }
+        // deno-lint-ignore no-explicit-any
+        return undefined as any;
+      }
+    );
   }
 }
 
@@ -97,7 +147,7 @@ class ChatWrapper<T extends Chat> {
     this._chat = chat;
   }
 
-  public addUser(userWrapper: UserWrapper): ChatMemberUpdate {
+  public async addUser(userWrapper: UserWrapper): Promise<ApiEvent[]> {
     if (this._participants[userWrapper.user.id] !== undefined) {
       throw new Error('User already added to chat');
     }
@@ -108,7 +158,7 @@ class ChatWrapper<T extends Chat> {
     }
 
     this._participants[userWrapper.user.id] = userWrapper.user;
-    return {
+    const update = {
       update_id: getId(),
       chat_member: {
         chat: this._chat,
@@ -124,6 +174,10 @@ class ChatWrapper<T extends Chat> {
         },
       },
     };
+
+    await this._environment.bot.handleUpdate(update as any);
+
+    return this._environment.getEvents();
   }
 }
 
