@@ -36,7 +36,7 @@ type ApiCallResult<M extends Methods<R>, R extends RawApi> = R[M] extends (
   : never;
 
 class EnvironmentWrapper {
-  private counter = 0;
+  private _counter = 0;
 
   private _chats: Map<number, ChatWrapper<Chat>> = new Map();
   private _users: Map<number, UserWrapper> = new Map();
@@ -65,7 +65,7 @@ class EnvironmentWrapper {
   }
 
   private getId() {
-    return ++counter;
+    return ++this._counter;
   }
 
   public createGroup(): ChatWrapper<Chat.GroupChat> {
