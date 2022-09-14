@@ -1,10 +1,7 @@
 import { ApiResponse, Chat, Update, User } from 'grammy/types.ts';
 import { Bot, RawApi } from 'grammy/mod.ts';
 import { Methods, Payload } from 'grammy/core/client.ts';
-import {
-  assertExists,
-  assertStrictEquals,
-} from 'https://deno.land/std@0.155.0/testing/asserts.ts';
+import { assertExists, assertStrictEquals } from 'std/testing/asserts.ts';
 
 function getUnixTime() {
   return ~~(Date.now() / 1000);

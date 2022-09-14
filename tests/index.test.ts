@@ -1,8 +1,5 @@
 import { Bot } from 'grammy/mod.ts';
-import {
-  Payload,
-  RawApi,
-} from 'https://deno.land/x/grammy@v1.10.1/core/client.ts';
+import { Payload, RawApi } from 'grammy/core/client.ts';
 import { assertEquals, assertExists } from 'std/testing/asserts.ts';
 import { Ymmarg } from '../src/index.ts';
 
