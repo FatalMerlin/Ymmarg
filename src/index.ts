@@ -1,7 +1,9 @@
-import { ApiResponse, Chat, Update, User } from 'grammy/types.ts';
-import { Bot, RawApi } from 'grammy/mod.ts';
 import { Methods, Payload } from 'grammy/core/client.ts';
+import { Bot, RawApi } from 'grammy/mod.ts';
+import { ApiResponse, Chat, User } from 'grammy/types.ts';
 import { assertExists, assertStrictEquals } from 'std/testing/asserts.ts';
+import { UpdateBuilder } from './builders/update.ts';
+import { ChatMemberUpdate } from './types/update.ts';
 
 function getUnixTime() {
   return ~~(Date.now() / 1000);
@@ -153,7 +155,8 @@ class ChatWrapper<T extends Chat> {
     }
 
     this._participants[userWrapper.user.id] = userWrapper.user;
-    const update = {
+
+    const update: ChatMemberUpdate = {
       update_id: getId(),
       chat_member: {
         chat: this._chat,
@@ -170,20 +173,14 @@ class ChatWrapper<T extends Chat> {
       },
     };
 
-    await this._environment.bot.handleUpdate(update as any);
+    await this._environment.bot.handleUpdate(update);
 
     return this._environment.getEvents();
   }
 }
 
-type UpdateType<T extends keyof Omit<Update, 'update_id'>> = Required<
-  Pick<Update, 'update_id' | T>
->;
-
-type MessageUpdate = UpdateType<'message'>;
-type ChatMemberUpdate = UpdateType<'chat_member'>;
-
 export const Ymmarg = {
+  Update: UpdateBuilder,
   createEnvironment,
   getId,
   expect(event: ApiEvent) {

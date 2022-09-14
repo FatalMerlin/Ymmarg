@@ -1,9 +1,19 @@
-import { CallbackQuery as GrammyCallbackQuery, Update as GrammyUpdate } from 'grammy/types.ts';
+import { CallbackQuery as GrammyCallbackQuery, Update } from 'grammy/types.ts';
 import { CallbackQuery } from './callback-query.ts';
 import { generateId } from './id.ts';
+import { CallbackQueryUpdate } from './types/update.ts';
 
 // TODO: add logic to return the rest of the update types
-export class Update {
+class UpdateBuilder {
+  private update: Update = {
+    update_id: -1,
+  };
+
+  public id(update_id: number): UpdateBuilder {
+    this.update.update_id = update_id;
+    return this;
+  }
+
   private _id?: number;
   private _callbackQuery?: CallbackQuery | GrammyCallbackQuery;
 
@@ -14,20 +24,22 @@ export class Update {
       : this._callbackQuery;
   }
 
-  public build(): GrammyUpdate {
+  public build(): CallbackQueryUpdate {
     const id = this._id ?? generateId();
 
     return {
       update_id: id,
-      callback_query: this.getCallbackQuery(),
+      callback_query: this.getCallbackQuery() || new CallbackQuery().build(),
     };
   }
 
   public callbackQuery(
-    cq?: CallbackQuery | GrammyCallbackQuery,
-  ): { update_id: number; callback_query: GrammyCallbackQuery } {
+    cq?: CallbackQuery | GrammyCallbackQuery
+  ): CallbackQueryUpdate {
     this._callbackQuery = cq || new CallbackQuery().build();
     // TODO: ugly pls help with fix?
-    return this.build() as any;
+    return this.build();
   }
 }
+
+export { UpdateBuilder as Update };
