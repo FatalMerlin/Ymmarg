@@ -1,7 +1,7 @@
 import { assertEquals, assertExists } from 'std/testing/asserts.ts';
-import { CallbackQuery } from '../callback-query.ts';
-import { Message } from '../message.ts';
-import { User } from '../user.ts';
+import { CallbackQuery } from '../src/callback-query.ts';
+import { Message } from '../src/message.ts';
+import { User } from '../src/user.ts';
 
 Deno.test('CallbackQuery', async (t) => {
   await t.step('defaults', () => {
@@ -24,7 +24,9 @@ Deno.test('CallbackQuery', async (t) => {
   });
 
   await t.step('chatInstance()', () => {
-    const callbackQuery = new CallbackQuery().chatInstance('test_instance').build();
+    const callbackQuery = new CallbackQuery()
+      .chatInstance('test_instance')
+      .build();
 
     assertEquals(callbackQuery.chat_instance, 'test_instance');
   });
@@ -42,13 +44,17 @@ Deno.test('CallbackQuery', async (t) => {
   });
 
   await t.step('gameShortName()', () => {
-    const callbackQuery = new CallbackQuery().gameShortName('test_short_name').build();
+    const callbackQuery = new CallbackQuery()
+      .gameShortName('test_short_name')
+      .build();
 
     assertEquals(callbackQuery.game_short_name, 'test_short_name');
   });
 
   await t.step('inlineMessageId()', () => {
-    const callbackQuery = new CallbackQuery().inlineMessageId('test_id').build();
+    const callbackQuery = new CallbackQuery()
+      .inlineMessageId('test_id')
+      .build();
 
     assertEquals(callbackQuery.inline_message_id, 'test_id');
   });

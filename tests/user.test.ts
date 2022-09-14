@@ -1,5 +1,5 @@
 import { assertEquals, assertExists } from 'std/testing/asserts.ts';
-import { User } from '../user.ts';
+import { User } from '../src/user.ts';
 
 Deno.test('User', async (t) => {
   await t.step('defaults', () => {
