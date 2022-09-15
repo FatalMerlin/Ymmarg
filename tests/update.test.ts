@@ -3,7 +3,7 @@ import { Ymmarg } from '../src/index.ts';
 
 Deno.test('Update Builder', async (t) => {
   await t.step('CallbackQuery Update Builder', () => {
-    const update = new Ymmarg.Update().id(7).callbackQuery().build();
+    const update = new Ymmarg.Update().id(7).callbackQuery.build();
 
     assert(typeof update.update_id === 'number');
     assert(update.update_id === 7);
